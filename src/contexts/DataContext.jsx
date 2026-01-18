@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const DataContext = createContext(null);
 
@@ -135,24 +135,29 @@ export function DataProvider({ children }) {
     return saved ? JSON.parse(saved) : initialData;
   });
 
+  // Salvar no localStorage quando os dados mudarem
   useEffect(() => {
     localStorage.setItem('escala_data', JSON.stringify(data));
   }, [data]);
 
-  // Users
-  const getUsers = () => data.users;
-  
-  const getUserById = (id) => data.users.find(u => u.id === id);
-  
-  const getUsersByRole = (role) => data.users.filter(u => u.role === role);
-  
-  const getGestores = () => getUsersByRole('gestor');
-  
-  const getCorretores = () => getUsersByRole('corretor');
-  
-  const getCorretoresByGestor = (gestorId) => 
-    data.users.filter(u => u.role === 'corretor' && u.gestorId === gestorId);
+  // Sincronizar dados entre abas/sessões do navegador
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'escala_data' && e.newValue) {
+        try {
+          const newData = JSON.parse(e.newValue);
+          setData(newData);
+        } catch (error) {
+          console.error('Erro ao sincronizar dados:', error);
+        }
+      }
+    };
 
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Funções de ação (mutations)
   const addUser = (user) => {
     const newUser = { ...user, id: Date.now().toString() };
     setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
@@ -172,17 +177,6 @@ export function DataProvider({ children }) {
       users: prev.users.filter(u => u.id !== id)
     }));
   };
-
-  // Plantões
-  const getPlantoes = () => data.plantoes;
-  
-  const getPlantaoById = (id) => data.plantoes.find(p => p.id === id);
-  
-  const getPlantoesByGestor = (gestorId) => 
-    data.plantoes.filter(p => p.gestorId === gestorId);
-  
-  const getPlantoesByCorretor = (corretorId) => 
-    data.plantoes.filter(p => p.corretorIds?.includes(corretorId));
 
   const addPlantao = (plantao) => {
     const newPlantao = { ...plantao, id: Date.now().toString() };
@@ -204,26 +198,27 @@ export function DataProvider({ children }) {
     }));
   };
 
-  const value = {
+  // Usar useMemo para garantir que o value mude quando data mudar
+  const value = useMemo(() => ({
     // Users
-    getUsers,
-    getUserById,
-    getUsersByRole,
-    getGestores,
-    getCorretores,
-    getCorretoresByGestor,
+    getUsers: () => data.users,
+    getUserById: (id) => data.users.find(u => u.id === id),
+    getUsersByRole: (role) => data.users.filter(u => u.role === role),
+    getGestores: () => data.users.filter(u => u.role === 'gestor'),
+    getCorretores: () => data.users.filter(u => u.role === 'corretor'),
+    getCorretoresByGestor: (gestorId) => data.users.filter(u => u.role === 'corretor' && u.gestorId === gestorId),
     addUser,
     updateUser,
     deleteUser,
     // Plantões
-    getPlantoes,
-    getPlantaoById,
-    getPlantoesByGestor,
-    getPlantoesByCorretor,
+    getPlantoes: () => data.plantoes,
+    getPlantaoById: (id) => data.plantoes.find(p => p.id === id),
+    getPlantoesByGestor: (gestorId) => data.plantoes.filter(p => p.gestorId === gestorId),
+    getPlantoesByCorretor: (corretorId) => data.plantoes.filter(p => p.corretorIds?.includes(corretorId)),
     addPlantao,
     updatePlantao,
     deletePlantao,
-  };
+  }), [data]);
 
   return (
     <DataContext.Provider value={value}>
