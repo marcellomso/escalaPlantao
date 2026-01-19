@@ -1,224 +1,144 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { usersApi, plantoesApi } from '../services/api';
 
 const DataContext = createContext(null);
 
-const initialData = {
-  users: [
-    {
-      id: '1',
-      name: 'Admin Diretor',
-      email: 'diretor@escala.com',
-      password: '123456',
-      role: 'diretor',
-      gestorId: null
-    },
-    {
-      id: '2',
-      name: 'João Batista',
-      email: 'joao@escala.com',
-      password: '123456',
-      role: 'gestor',
-      gestorId: null
-    },
-    {
-      id: '3',
-      name: 'Claudia Glasson',
-      email: 'claudia@escala.com',
-      password: '123456',
-      role: 'gestor',
-      gestorId: null
-    },
-    {
-      id: '4',
-      name: 'Fernanda Machado',
-      email: 'fernanda@escala.com',
-      password: '123456',
-      role: 'gestor',
-      gestorId: null
-    },
-    {
-      id: '5',
-      name: 'Matheus Rohde Flach Catani',
-      email: 'matheus@escala.com',
-      password: '123456',
-      role: 'corretor',
-      gestorId: '2'
-    },
-    {
-      id: '6',
-      name: 'Carlos Silva',
-      email: 'carlos@escala.com',
-      password: '123456',
-      role: 'corretor',
-      gestorId: '2'
-    }
-  ],
-  plantoes: [
-    {
-      id: '1',
-      title: 'Reserva Ipê Premium',
-      date: '2026-01-18',
-      startTime: '08:00',
-      endTime: '20:00',
-      location: 'Av 33333',
-      notes: 'teste',
-      gestorId: '2',
-      corretorIds: [],
-      status: 'pendente'
-    },
-    {
-      id: '2',
-      title: 'Stand Lamborghini (Manhã)',
-      date: '2026-01-12',
-      startTime: '08:00',
-      endTime: '13:00',
-      location: 'stand',
-      notes: '',
-      gestorId: '3',
-      corretorIds: [],
-      status: 'pendente'
-    },
-    {
-      id: '3',
-      title: 'Central Palme (Tarde)',
-      date: '2026-01-13',
-      startTime: '13:00',
-      endTime: '19:00',
-      location: 'palme',
-      notes: '',
-      gestorId: '2',
-      corretorIds: [],
-      status: 'pendente'
-    },
-    {
-      id: '4',
-      title: 'STAND ECOVILLE (Manhã)',
-      date: '2026-01-12',
-      startTime: '08:00',
-      endTime: '13:00',
-      location: 'STAND ECOVILLE',
-      notes: '',
-      gestorId: '4',
-      corretorIds: [],
-      status: 'pendente'
-    },
-    {
-      id: '5',
-      title: 'Container 15W22 (Manhã)',
-      date: '2026-01-15',
-      startTime: '08:00',
-      endTime: '20:00',
-      location: '15W22',
-      notes: '',
-      gestorId: '3',
-      corretorIds: [],
-      status: 'pendente'
-    },
-    {
-      id: '6',
-      title: 'Central Elmo RP (Manhã)',
-      date: '2026-01-14',
-      startTime: '08:00',
-      endTime: '13:00',
-      location: 'RP',
-      notes: '',
-      gestorId: '4',
-      corretorIds: [],
-      status: 'pendente'
-    }
-  ]
-};
-
 export function DataProvider({ children }) {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('escala_data');
-    return saved ? JSON.parse(saved) : initialData;
-  });
+  const [users, setUsers] = useState([]);
+  const [plantoes, setPlantoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Salvar no localStorage quando os dados mudarem
+  // Carregar dados iniciais
   useEffect(() => {
-    localStorage.setItem('escala_data', JSON.stringify(data));
-  }, [data]);
-
-  // Sincronizar dados entre abas/sessões do navegador
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'escala_data' && e.newValue) {
-        try {
-          const newData = JSON.parse(e.newValue);
-          setData(newData);
-        } catch (error) {
-          console.error('Erro ao sincronizar dados:', error);
-        }
+    async function loadData() {
+      try {
+        setLoading(true);
+        const [usersData, plantoesData] = await Promise.all([
+          usersApi.getAll(),
+          plantoesApi.getAll()
+        ]);
+        setUsers(usersData);
+        setPlantoes(plantoesData);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+        console.error('Erro ao carregar dados:', err);
+      } finally {
+        setLoading(false);
       }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    }
+    loadData();
   }, []);
 
-  // Funções de ação (mutations)
-  const addUser = (user) => {
-    const newUser = { ...user, id: Date.now().toString() };
-    setData(prev => ({ ...prev, users: [...prev.users, newUser] }));
-    return newUser;
-  };
+  // Funções de Usuários
+  const addUser = useCallback(async (user) => {
+    try {
+      const newUser = await usersApi.create(user);
+      setUsers(prev => [...prev, newUser]);
+      return newUser;
+    } catch (err) {
+      console.error('Erro ao adicionar usuário:', err);
+      throw err;
+    }
+  }, []);
 
-  const updateUser = (id, updates) => {
-    setData(prev => ({
-      ...prev,
-      users: prev.users.map(u => u.id === id ? { ...u, ...updates } : u)
-    }));
-  };
+  const updateUser = useCallback(async (id, updates) => {
+    try {
+      const updatedUser = await usersApi.update(id, updates);
+      setUsers(prev => prev.map(u => u.id === id ? updatedUser : u));
+      return updatedUser;
+    } catch (err) {
+      console.error('Erro ao atualizar usuário:', err);
+      throw err;
+    }
+  }, []);
 
-  const deleteUser = (id) => {
-    setData(prev => ({
-      ...prev,
-      users: prev.users.filter(u => u.id !== id)
-    }));
-  };
+  const deleteUser = useCallback(async (id) => {
+    try {
+      await usersApi.delete(id);
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (err) {
+      console.error('Erro ao deletar usuário:', err);
+      throw err;
+    }
+  }, []);
 
-  const addPlantao = (plantao) => {
-    const newPlantao = { ...plantao, id: Date.now().toString() };
-    setData(prev => ({ ...prev, plantoes: [...prev.plantoes, newPlantao] }));
-    return newPlantao;
-  };
+  // Funções de Plantões
+  const addPlantao = useCallback(async (plantao) => {
+    try {
+      const newPlantao = await plantoesApi.create(plantao);
+      setPlantoes(prev => [...prev, newPlantao]);
+      return newPlantao;
+    } catch (err) {
+      console.error('Erro ao adicionar plantão:', err);
+      throw err;
+    }
+  }, []);
 
-  const updatePlantao = (id, updates) => {
-    setData(prev => ({
-      ...prev,
-      plantoes: prev.plantoes.map(p => p.id === id ? { ...p, ...updates } : p)
-    }));
-  };
+  const updatePlantao = useCallback(async (id, updates) => {
+    try {
+      const updatedPlantao = await plantoesApi.update(id, updates);
+      setPlantoes(prev => prev.map(p => p.id === id ? updatedPlantao : p));
+      return updatedPlantao;
+    } catch (err) {
+      console.error('Erro ao atualizar plantão:', err);
+      throw err;
+    }
+  }, []);
 
-  const deletePlantao = (id) => {
-    setData(prev => ({
-      ...prev,
-      plantoes: prev.plantoes.filter(p => p.id !== id)
-    }));
-  };
+  const deletePlantao = useCallback(async (id) => {
+    try {
+      await plantoesApi.delete(id);
+      setPlantoes(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Erro ao deletar plantão:', err);
+      throw err;
+    }
+  }, []);
 
-  // Usar useMemo para garantir que o value mude quando data mudar
+  // Função para recarregar dados
+  const refreshData = useCallback(async () => {
+    try {
+      const [usersData, plantoesData] = await Promise.all([
+        usersApi.getAll(),
+        plantoesApi.getAll()
+      ]);
+      setUsers(usersData);
+      setPlantoes(plantoesData);
+    } catch (err) {
+      console.error('Erro ao recarregar dados:', err);
+    }
+  }, []);
+
   const value = useMemo(() => ({
+    // Estado
+    loading,
+    error,
+    
     // Users
-    getUsers: () => data.users,
-    getUserById: (id) => data.users.find(u => u.id === id),
-    getUsersByRole: (role) => data.users.filter(u => u.role === role),
-    getGestores: () => data.users.filter(u => u.role === 'gestor'),
-    getCorretores: () => data.users.filter(u => u.role === 'corretor'),
-    getCorretoresByGestor: (gestorId) => data.users.filter(u => u.role === 'corretor' && u.gestorId === gestorId),
+    getUsers: () => users,
+    getUserById: (id) => users.find(u => u.id === id),
+    getUsersByRole: (role) => users.filter(u => u.role === role),
+    getGestores: () => users.filter(u => u.role === 'gestor'),
+    getCorretores: () => users.filter(u => u.role === 'corretor'),
+    getCorretoresByGestor: (gestorId) => users.filter(u => u.role === 'corretor' && u.gestorId === gestorId),
     addUser,
     updateUser,
     deleteUser,
+    
     // Plantões
-    getPlantoes: () => data.plantoes,
-    getPlantaoById: (id) => data.plantoes.find(p => p.id === id),
-    getPlantoesByGestor: (gestorId) => data.plantoes.filter(p => p.gestorId === gestorId),
-    getPlantoesByCorretor: (corretorId) => data.plantoes.filter(p => p.corretorIds?.includes(corretorId)),
+    getPlantoes: () => plantoes,
+    getPlantaoById: (id) => plantoes.find(p => p.id === id),
+    getPlantoesByGestor: (gestorId) => plantoes.filter(p => p.gestorId === gestorId),
+    getPlantoesByCorretor: (corretorId) => plantoes.filter(p => p.corretorIds?.includes(corretorId)),
     addPlantao,
     updatePlantao,
     deletePlantao,
-  }), [data]);
+
+    // Utilitários
+    refreshData,
+  }), [users, plantoes, loading, error, addUser, updateUser, deleteUser, addPlantao, updatePlantao, deletePlantao, refreshData]);
 
   return (
     <DataContext.Provider value={value}>
