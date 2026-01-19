@@ -131,7 +131,7 @@ export function DataProvider({ children }) {
     getPlantoes: () => plantoes,
     getPlantaoById: (id) => plantoes.find(p => p.id === id),
     getPlantoesByGestor: (gestorId) => plantoes.filter(p => p.gestorId === gestorId),
-    getPlantoesByCorretor: (corretorId) => plantoes.filter(p => p.corretorIds?.includes(corretorId)),
+    getPlantoesByCorretor: (corretorId) => plantoes.filter(p => p.corretorId === corretorId),
     addPlantao,
     updatePlantao,
     deletePlantao,

@@ -29,12 +29,20 @@ export default function Sidebar() {
       { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     ];
 
+    // Menu específico por role
     if (user?.role === 'diretor') {
-      items.push({ to: '/plantoes', icon: ClipboardList, label: 'Plantões' });
+      items.push({ to: '/plantoes', icon: ClipboardList, label: 'Gerenciar Plantões' });
+    }
+
+    if (user?.role === 'gestor') {
+      items.push({ to: '/gestor-plantoes', icon: ClipboardList, label: 'Meus Plantões' });
+    }
+
+    if (user?.role === 'corretor') {
+      items.push({ to: '/corretor-plantoes', icon: ClipboardList, label: 'Meus Plantões' });
     }
 
     items.push(
-      { to: '/meus-plantoes', icon: Calendar, label: 'Meus Plantões' },
       { to: '/agenda', icon: CalendarDays, label: 'Agenda' },
       { to: '/equipe', icon: Users, label: 'Equipe' }
     );

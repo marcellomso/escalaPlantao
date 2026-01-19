@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import PlantaoCard from '../components/PlantaoCard';
 import Modal from '../components/Modal';
 import { Navigate } from 'react-router-dom';
+import { parseISO, isValid, isBefore, startOfDay } from 'date-fns';
 
 const initialFormData = {
   title: '',
@@ -13,8 +14,45 @@ const initialFormData = {
   endTime: '13:00',
   location: '',
   notes: '',
-  gestorId: '',
-  status: 'pendente'
+  gestorId: ''
+};
+
+/**
+ * Valida se a data é válida e não está no passado
+ * @param {string} dateStr - Data no formato YYYY-MM-DD
+ * @returns {{ isValid: boolean, error: string | null }}
+ */
+const validateDate = (dateStr) => {
+  if (!dateStr) {
+    return { isValid: false, error: 'Data é obrigatória' };
+  }
+
+  // Verifica se a data tem o formato correto (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(dateStr)) {
+    return { isValid: false, error: 'Formato de data inválido' };
+  }
+
+  // Tenta fazer o parse da data
+  const parsedDate = parseISO(dateStr);
+  
+  if (!isValid(parsedDate)) {
+    return { isValid: false, error: 'Data inválida' };
+  }
+
+  // Verifica se o ano é razoável (entre 2020 e 2100)
+  const year = parsedDate.getFullYear();
+  if (year < 2020 || year > 2100) {
+    return { isValid: false, error: 'Ano deve estar entre 2020 e 2100' };
+  }
+
+  // Verifica se a data não está no passado
+  const today = startOfDay(new Date());
+  if (isBefore(parsedDate, today)) {
+    return { isValid: false, error: 'Data não pode ser no passado' };
+  }
+
+  return { isValid: true, error: null };
 };
 
 export default function Plantoes() {
@@ -23,6 +61,7 @@ export default function Plantoes() {
   const [showModal, setShowModal] = useState(false);
   const [editingPlantao, setEditingPlantao] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const [formErrors, setFormErrors] = useState({});
 
   // Apenas diretor pode acessar esta página
   if (user?.role !== 'diretor') {
@@ -47,15 +86,45 @@ export default function Plantoes() {
     setShowModal(false);
     setEditingPlantao(null);
     setFormData(initialFormData);
+    setFormErrors({});
+  };
+
+  // Valida a data ao alterar o campo
+  const handleDateChange = (dateStr) => {
+    setFormData({ ...formData, date: dateStr });
+    
+    // Valida a data e atualiza os erros
+    const validation = validateDate(dateStr);
+    if (!validation.isValid) {
+      setFormErrors({ ...formErrors, date: validation.error });
+    } else {
+      // Remove o erro de data se válida
+      const { date, ...restErrors } = formErrors;
+      setFormErrors(restErrors);
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Valida a data antes de enviar
+    const dateValidation = validateDate(formData.date);
+    if (!dateValidation.isValid) {
+      setFormErrors({ ...formErrors, date: dateValidation.error });
+      return;
+    }
+
+    // Valida se hora fim é maior que hora início
+    if (formData.startTime >= formData.endTime) {
+      setFormErrors({ ...formErrors, time: 'Hora de fim deve ser maior que hora de início' });
+      return;
+    }
+    
     if (editingPlantao) {
       updatePlantao(editingPlantao.id, formData);
     } else {
-      addPlantao({ ...formData, corretorIds: [] });
+      // Backend define o status automaticamente
+      addPlantao(formData);
     }
     
     handleCloseModal();
@@ -138,11 +207,18 @@ export default function Plantoes() {
               <label className="label">Data</label>
               <input
                 type="date"
-                className="input"
+                className={`input ${formErrors.date ? 'border-red-500 focus:ring-red-500' : ''}`}
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(e) => handleDateChange(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
                 required
               />
+              {formErrors.date && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {formErrors.date}
+                </p>
+              )}
             </div>
             <div>
               <label className="label">Gestor Responsável</label>
@@ -164,9 +240,16 @@ export default function Plantoes() {
               <label className="label">Hora Início</label>
               <input
                 type="time"
-                className="input"
+                className={`input ${formErrors.time ? 'border-red-500 focus:ring-red-500' : ''}`}
                 value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, startTime: e.target.value });
+                  // Remove erro de tempo ao alterar
+                  if (formErrors.time) {
+                    const { time, ...restErrors } = formErrors;
+                    setFormErrors(restErrors);
+                  }
+                }}
                 required
               />
             </div>
@@ -174,13 +257,26 @@ export default function Plantoes() {
               <label className="label">Hora Fim</label>
               <input
                 type="time"
-                className="input"
+                className={`input ${formErrors.time ? 'border-red-500 focus:ring-red-500' : ''}`}
                 value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, endTime: e.target.value });
+                  // Remove erro de tempo ao alterar
+                  if (formErrors.time) {
+                    const { time, ...restErrors } = formErrors;
+                    setFormErrors(restErrors);
+                  }
+                }}
                 required
               />
             </div>
           </div>
+          {formErrors.time && (
+            <p className="text-sm text-red-600 flex items-center gap-1 -mt-2">
+              <AlertCircle size={14} />
+              {formErrors.time}
+            </p>
+          )}
 
           <div>
             <label className="label">Local</label>
