@@ -28,7 +28,8 @@ if (isProduction) {
   app.use(express.static(distPath));
   
   // Todas as rotas não-API retornam o index.html (para SPA)
-  app.get('*', (req, res) => {
+  // Express 5 requer sintaxe {*path} para wildcard
+  app.get('{*path}', (req, res) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(distPath, 'index.html'));
     }
