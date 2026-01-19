@@ -108,24 +108,24 @@ export default function Agenda() {
       </div>
 
       {/* Legenda de cores */}
-      <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 text-xs sm:text-sm">
         <span className="text-gray-500 font-medium">Legenda:</span>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-emerald-200 border border-emerald-300"></div>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-emerald-200 border border-emerald-300"></div>
           <span className="text-gray-600">Confirmado</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-amber-200 border border-amber-300"></div>
-          <span className="text-gray-600">Aguardando Confirmação</span>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-amber-200 border border-amber-300"></div>
+          <span className="text-gray-600">Aguard. Confirm.</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-gray-200 border border-gray-300"></div>
-          <span className="text-gray-600">Aguardando Corretor</span>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-gray-200 border border-gray-300"></div>
+          <span className="text-gray-600">Aguard. Corretor</span>
         </div>
       </div>
 
       {/* Week Navigation */}
-      <div className="flex items-center justify-between mb-6 bg-white rounded-xl p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white rounded-xl p-3 sm:p-4 shadow-sm">
         <div className="flex items-center gap-2">
           <button
             onClick={goToPreviousWeek}
@@ -135,7 +135,7 @@ export default function Agenda() {
           </button>
           <button
             onClick={goToToday}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+            className="px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors text-sm sm:text-base"
           >
             Hoje
           </button>
@@ -147,18 +147,103 @@ export default function Agenda() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-gray-600">
-          <Calendar size={20} />
-          <span className="font-medium">{formatWeekRange()}</span>
+        <div className="flex items-center gap-2 text-gray-600 text-sm sm:text-base">
+          <Calendar size={18} className="hidden sm:block" />
+          <span className="font-medium text-center">{formatWeekRange()}</span>
         </div>
 
-        <span className="text-sm text-gray-500">
+        <span className="text-xs sm:text-sm text-gray-500">
           {totalPlantoesWeek} plantões
         </span>
       </div>
 
-      {/* Visão Semanal */}
-      <div className="grid grid-cols-7 gap-2">
+      {/* Visão Mobile: Lista vertical (< md) */}
+      <div className="md:hidden space-y-3">
+        {weekDays.map((day) => {
+          const dayPlantoes = getPlantoesForDay(day);
+          const isDayToday = isToday(day);
+          
+          return (
+            <div 
+              key={day.toISOString()} 
+              className={`bg-white rounded-xl shadow-sm overflow-hidden ${
+                isDayToday ? 'ring-2 ring-blue-500' : ''
+              }`}
+            >
+              {/* Cabeçalho do dia */}
+              <div className={`p-3 flex items-center justify-between ${
+                isDayToday 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-50 text-gray-700'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold">{format(day, 'd')}</span>
+                  <div>
+                    <div className="text-sm font-medium capitalize">
+                      {format(day, 'EEEE', { locale: ptBR })}
+                    </div>
+                    <div className="text-xs opacity-75">
+                      {format(day, "MMMM 'de' yyyy", { locale: ptBR })}
+                    </div>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full ${
+                  isDayToday 
+                    ? 'bg-white/20' 
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {dayPlantoes.length} plantão{dayPlantoes.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              
+              {/* Plantões do dia */}
+              <div className="p-3 space-y-2">
+                {dayPlantoes.length === 0 ? (
+                  <div className="text-center text-gray-400 text-sm py-2">
+                    Sem plantões
+                  </div>
+                ) : (
+                  dayPlantoes.map((plantao) => {
+                    const style = getPlantaoStyle(plantao);
+                    const isConfirmado = plantao.confirmedByCorretor || plantao.status === 'confirmado';
+                    
+                    return (
+                      <div 
+                        key={plantao.id}
+                        className={`p-3 rounded-lg border transition-colors ${style.bg} ${style.border}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className={`text-sm font-semibold ${style.title}`}>
+                            {plantao.title}
+                          </h4>
+                          {isConfirmado && (
+                            <CheckCircle size={16} className="text-emerald-500 flex-shrink-0" />
+                          )}
+                        </div>
+                        <div className={`flex items-center gap-3 text-xs mt-2 ${style.text}`}>
+                          <div className="flex items-center gap-1">
+                            <Clock size={12} />
+                            <span>{plantao.startTime} - {plantao.endTime}</span>
+                          </div>
+                          {plantao.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin size={12} />
+                              <span className="truncate max-w-[150px]">{plantao.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Visão Desktop: Grid de 7 colunas (>= md) */}
+      <div className="hidden md:grid grid-cols-7 gap-2">
         {weekDays.map((day) => {
           const dayPlantoes = getPlantoesForDay(day);
           const isDayToday = isToday(day);

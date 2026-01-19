@@ -78,14 +78,14 @@ export default function Home() {
 
       {/* Quick Links */}
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Acesso Rápido</h2>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {quickLinks.map((link, index) => (
           <Link
             key={index}
             to={link.to}
             className="card hover:shadow-md transition-shadow flex items-center gap-3"
           >
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
               <link.icon className="text-gray-600" size={20} />
             </div>
             <span className="font-medium text-gray-900">{link.label}</span>

@@ -83,14 +83,16 @@ export default function Login() {
         </div>
 
         {/* Roles */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3 mb-8">
           {roles.map((role) => (
-            <div key={role.title} className="text-center">
-              <div className={`w-14 h-14 ${role.color} rounded-xl flex items-center justify-center mx-auto mb-2`}>
+            <div key={role.title} className="flex sm:flex-col items-center sm:items-center gap-3 sm:gap-0 text-left sm:text-center bg-white/5 sm:bg-transparent rounded-lg p-3 sm:p-0">
+              <div className={`w-12 h-12 sm:w-14 sm:h-14 ${role.color} rounded-xl flex items-center justify-center flex-shrink-0 sm:mx-auto sm:mb-2`}>
                 <role.icon className="text-white" size={24} />
               </div>
-              <h3 className="font-medium text-white text-sm">{role.title}</h3>
-              <p className="text-xs text-gray-500 mt-1">{role.description}</p>
+              <div className="min-w-0">
+                <h3 className="font-medium text-white text-sm">{role.title}</h3>
+                <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">{role.description}</p>
+              </div>
             </div>
           ))}
         </div>

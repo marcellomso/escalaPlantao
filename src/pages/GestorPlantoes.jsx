@@ -55,31 +55,31 @@ export default function GestorPlantoes() {
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="card bg-amber-50 border-amber-200">
           <div className="flex items-center gap-3">
-            <Calendar className="text-amber-500" size={24} />
-            <div>
+            <Calendar className="text-amber-500 flex-shrink-0" size={24} />
+            <div className="min-w-0">
               <p className="text-2xl font-bold text-amber-700">{aguardandoCorretor.length}</p>
-              <p className="text-sm text-amber-600">Aguardando Corretor</p>
+              <p className="text-sm text-amber-600 truncate">Aguardando Corretor</p>
             </div>
           </div>
         </div>
         <div className="card bg-blue-50 border-blue-200">
           <div className="flex items-center gap-3">
-            <Users className="text-blue-500" size={24} />
-            <div>
+            <Users className="text-blue-500 flex-shrink-0" size={24} />
+            <div className="min-w-0">
               <p className="text-2xl font-bold text-blue-700">{aguardandoConfirmacao.length}</p>
-              <p className="text-sm text-blue-600">Aguardando Confirmação</p>
+              <p className="text-sm text-blue-600 truncate">Aguardando Confirmação</p>
             </div>
           </div>
         </div>
         <div className="card bg-emerald-50 border-emerald-200">
           <div className="flex items-center gap-3">
-            <Calendar className="text-emerald-500" size={24} />
-            <div>
+            <Calendar className="text-emerald-500 flex-shrink-0" size={24} />
+            <div className="min-w-0">
               <p className="text-2xl font-bold text-emerald-700">{confirmados.length}</p>
-              <p className="text-sm text-emerald-600">Confirmados</p>
+              <p className="text-sm text-emerald-600 truncate">Confirmados</p>
             </div>
           </div>
         </div>
