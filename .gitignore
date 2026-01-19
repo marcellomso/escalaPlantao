@@ -1,4 +1,13 @@
 node_modules
+dist
 
 # Database files
 /data/*.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.production

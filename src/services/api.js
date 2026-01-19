@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3001/api';
+// Em produção, usa URL relativa. Em dev, usa localhost:3001
+const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3001/api';
 
 // Função auxiliar para requisições
 async function request(endpoint, options = {}) {
