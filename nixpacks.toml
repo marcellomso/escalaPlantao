@@ -6,9 +6,7 @@ cmds = ["npm install --legacy-peer-deps"]
 
 [phases.build]
 cmds = ["npm run build"]
+cacheDirectories = []
 
 [start]
 cmd = "npm run start"
-
-[phases.build]
-cacheDirectories = []
