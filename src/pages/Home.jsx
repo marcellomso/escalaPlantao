@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 
 export default function Home() {
   const { user } = useAuth();
-  const { getPlantoes, getGestores, getCorretores, getPlantoesByGestor, getCorretoresByGestor } = useData();
+  const { getPlantoes, getGestores, getCorretores, getPlantoesByGestor, getPlantoesByCorretor, getCorretoresByGestor } = useData();
 
   const stats = [];
 
@@ -18,26 +18,37 @@ export default function Home() {
   } else if (user?.role === 'gestor') {
     const meusPlantoes = getPlantoesByGestor(user.id);
     const meusCorretores = getCorretoresByGestor(user.id);
+    // Conta plantões aguardando atribuição de corretor
+    const aguardandoCorretor = meusPlantoes.filter(p => p.status === 'aguardando_corretor').length;
     stats.push(
       { label: 'Meus Plantões', value: meusPlantoes.length, icon: ClipboardList, color: 'bg-primary-600' },
       { label: 'Minha Equipe', value: meusCorretores.length, icon: Users, color: 'bg-emerald-500' },
-      { label: 'Pendentes', value: meusPlantoes.filter(p => p.status === 'pendente').length, icon: Calendar, color: 'bg-amber-500' }
+      { label: 'Aguardando Corretor', value: aguardandoCorretor, icon: Calendar, color: 'bg-amber-500' }
     );
-  } else {
+  } else if (user?.role === 'corretor') {
+    const meusPlantoes = getPlantoesByCorretor(user.id);
+    // Conta plantões aguardando confirmação
+    const aguardandoConfirmacao = meusPlantoes.filter(p => p.status === 'aguardando_confirmacao').length;
+    const confirmados = meusPlantoes.filter(p => p.status === 'confirmado').length;
     stats.push(
-      { label: 'Meus Plantões', value: 0, icon: ClipboardList, color: 'bg-primary-600' },
-      { label: 'Esta Semana', value: 0, icon: Calendar, color: 'bg-amber-500' }
+      { label: 'Meus Plantões', value: meusPlantoes.length, icon: ClipboardList, color: 'bg-primary-600' },
+      { label: 'Aguardando Confirmação', value: aguardandoConfirmacao, icon: Calendar, color: 'bg-amber-500' },
+      { label: 'Confirmados', value: confirmados, icon: Calendar, color: 'bg-emerald-500' }
     );
   }
 
+  // Links rápidos baseados no role
   const quickLinks = [
     { to: '/dashboard', label: 'Ver Dashboard', icon: TrendingUp },
-    { to: '/meus-plantoes', label: 'Meus Plantões', icon: Calendar },
     { to: '/equipe', label: 'Ver Equipe', icon: Users },
   ];
 
   if (user?.role === 'diretor') {
     quickLinks.unshift({ to: '/plantoes', label: 'Gerenciar Plantões', icon: ClipboardList });
+  } else if (user?.role === 'gestor') {
+    quickLinks.unshift({ to: '/gestor-plantoes', label: 'Meus Plantões', icon: Calendar });
+  } else if (user?.role === 'corretor') {
+    quickLinks.unshift({ to: '/corretor-plantoes', label: 'Meus Plantões', icon: Calendar });
   }
 
   return (

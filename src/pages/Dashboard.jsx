@@ -18,7 +18,12 @@ export default function Dashboard() {
       ? getPlantoesByGestor(user.id)
       : getPlantoesByCorretor(user.id);
 
-  const pendentes = plantoes.filter(p => p.status === 'pendente');
+  // Agrupa por status baseado no novo fluxo
+  const aguardando = plantoes.filter(p => 
+    p.status === 'aguardando_gestor' || 
+    p.status === 'aguardando_corretor' || 
+    p.status === 'aguardando_confirmacao'
+  );
   const confirmados = plantoes.filter(p => p.status === 'confirmado');
 
   const currentYear = new Date().getFullYear();
@@ -50,8 +55,8 @@ export default function Dashboard() {
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
-    { id: 'pendentes', label: `Pendentes (${pendentes.length})`, icon: Calendar },
-    { id: 'atribuidos', label: `Atribuídos (${confirmados.length})`, icon: CheckCircle },
+    { id: 'pendentes', label: `Aguardando (${aguardando.length})`, icon: Calendar },
+    { id: 'confirmados', label: `Confirmados (${confirmados.length})`, icon: CheckCircle },
   ];
 
   return (
@@ -97,13 +102,13 @@ export default function Dashboard() {
 
       {activeTab === 'pendentes' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {pendentes.length === 0 ? (
+          {aguardando.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">Nenhum plantão pendente</p>
+              <p className="text-gray-500">Nenhum plantão aguardando</p>
             </div>
           ) : (
-            pendentes.map((plantao) => (
+            aguardando.map((plantao) => (
               <PlantaoCard
                 key={plantao.id}
                 plantao={plantao}
@@ -114,12 +119,12 @@ export default function Dashboard() {
         </div>
       )}
 
-      {activeTab === 'atribuidos' && (
+      {activeTab === 'confirmados' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {confirmados.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <CheckCircle size={48} className="mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">Nenhum plantão atribuído</p>
+              <p className="text-gray-500">Nenhum plantão confirmado</p>
             </div>
           ) : (
             confirmados.map((plantao) => (

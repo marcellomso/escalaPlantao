@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, CheckCircle } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, parseISO, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,14 +21,12 @@ export default function Agenda() {
   const goToToday = () => setCurrentDate(new Date());
 
   // Buscar plantões baseado no role
-  // Corretor só vê plantões atribuídos a ele
   let allPlantoes = [];
   if (user?.role === 'diretor') {
     allPlantoes = getPlantoes();
   } else if (user?.role === 'gestor') {
     allPlantoes = getPlantoesByGestor(user.id);
   } else if (user?.role === 'corretor') {
-    // Corretor só vê os plantões onde está atribuído
     allPlantoes = getPlantoesByCorretor(user.id);
   }
 
@@ -42,6 +40,48 @@ export default function Agenda() {
         return false;
       }
     });
+  };
+
+  /**
+   * Retorna as classes de estilo baseado no status do plantão
+   * - Confirmado: Verde
+   * - Aguardando confirmação: Amarelo/Laranja  
+   * - Aguardando corretor/gestor: Cinza
+   */
+  const getPlantaoStyle = (plantao) => {
+    const isConfirmado = plantao.confirmedByCorretor || plantao.status === 'confirmado';
+    const hasCorretor = !!plantao.corretorId;
+
+    if (isConfirmado) {
+      return {
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-200',
+        hover: 'hover:bg-emerald-100',
+        title: 'text-emerald-900',
+        text: 'text-emerald-700',
+        textLight: 'text-emerald-600'
+      };
+    } else if (hasCorretor) {
+      // Tem corretor mas não confirmou
+      return {
+        bg: 'bg-amber-50',
+        border: 'border-amber-200',
+        hover: 'hover:bg-amber-100',
+        title: 'text-amber-900',
+        text: 'text-amber-700',
+        textLight: 'text-amber-600'
+      };
+    } else {
+      // Sem corretor ainda
+      return {
+        bg: 'bg-gray-50',
+        border: 'border-gray-200',
+        hover: 'hover:bg-gray-100',
+        title: 'text-gray-900',
+        text: 'text-gray-700',
+        textLight: 'text-gray-600'
+      };
+    }
   };
 
   // Contar total de plantões da semana
@@ -65,6 +105,23 @@ export default function Agenda() {
             ? 'Seus plantões da semana' 
             : 'Visão semanal dos plantões'}
         </p>
+      </div>
+
+      {/* Legenda de cores */}
+      <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
+        <span className="text-gray-500 font-medium">Legenda:</span>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-emerald-200 border border-emerald-300"></div>
+          <span className="text-gray-600">Confirmado</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-amber-200 border border-amber-300"></div>
+          <span className="text-gray-600">Aguardando Confirmação</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-gray-200 border border-gray-300"></div>
+          <span className="text-gray-600">Aguardando Corretor</span>
+        </div>
       </div>
 
       {/* Week Navigation */}
@@ -134,26 +191,36 @@ export default function Agenda() {
                     Sem plantões
                   </div>
                 ) : (
-                  dayPlantoes.map((plantao) => (
-                    <div 
-                      key={plantao.id}
-                      className="p-2 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors"
-                    >
-                      <h4 className="text-xs font-semibold text-blue-900 truncate">
-                        {plantao.title}
-                      </h4>
-                      <div className="flex items-center gap-1 text-xs text-blue-700 mt-1">
-                        <Clock size={10} />
-                        <span>{plantao.startTime} - {plantao.endTime}</span>
-                      </div>
-                      {plantao.location && (
-                        <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
-                          <MapPin size={10} />
-                          <span className="truncate">{plantao.location}</span>
+                  dayPlantoes.map((plantao) => {
+                    const style = getPlantaoStyle(plantao);
+                    const isConfirmado = plantao.confirmedByCorretor || plantao.status === 'confirmado';
+                    
+                    return (
+                      <div 
+                        key={plantao.id}
+                        className={`p-2 rounded-lg border transition-colors ${style.bg} ${style.border} ${style.hover}`}
+                      >
+                        <div className="flex items-start justify-between gap-1">
+                          <h4 className={`text-xs font-semibold truncate ${style.title}`}>
+                            {plantao.title}
+                          </h4>
+                          {isConfirmado && (
+                            <CheckCircle size={12} className="text-emerald-500 flex-shrink-0" />
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))
+                        <div className={`flex items-center gap-1 text-xs mt-1 ${style.text}`}>
+                          <Clock size={10} />
+                          <span>{plantao.startTime} - {plantao.endTime}</span>
+                        </div>
+                        {plantao.location && (
+                          <div className={`flex items-center gap-1 text-xs mt-1 ${style.textLight}`}>
+                            <MapPin size={10} />
+                            <span className="truncate">{plantao.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </div>
