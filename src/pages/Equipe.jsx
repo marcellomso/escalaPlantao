@@ -184,34 +184,34 @@ export default function Equipe() {
                 </div>
                 
                 <div className="card bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200">
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg flex-shrink-0">
                       {gestor.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-lg">{gestor.name}</h3>
-                      <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 mt-1">
+                      <h3 className="font-semibold text-gray-900 text-base truncate">{gestor.name}</h3>
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 mt-1">
                         Gestor
                       </span>
                       <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                        <Mail size={16} className="text-gray-400" />
-                        <span>{gestor.email}</span>
+                        <Mail size={14} className="text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{gestor.email}</span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <button
                         onClick={() => handleOpenModal(gestor)}
-                        className="p-2 hover:bg-amber-100 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 hover:bg-amber-100 rounded-lg transition-colors"
                         title="Editar"
                       >
-                        <Pencil size={16} className="text-amber-600" />
+                        <Pencil size={14} className="text-amber-600" />
                       </button>
                       <button
                         onClick={() => handleDelete(gestor.id)}
-                        className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 hover:bg-red-100 rounded-lg transition-colors"
                         title="Excluir"
                       >
-                        <Trash2 size={16} className="text-red-600" />
+                        <Trash2 size={14} className="text-red-600" />
                       </button>
                     </div>
                   </div>
@@ -334,18 +334,18 @@ export default function Equipe() {
             Diretor
           </h3>
           <div className="card bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg flex-shrink-0">
                 {diretorData.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 text-lg">{diretorData.name}</h3>
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mt-1">
+                <h3 className="font-semibold text-gray-900 text-base truncate">{diretorData.name}</h3>
+                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mt-1">
                   Diretor
                 </span>
                 <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                  <Mail size={16} className="text-gray-400" />
-                  <span>{diretorData.email}</span>
+                  <Mail size={14} className="text-gray-400 flex-shrink-0" />
+                  <span className="truncate">{diretorData.email}</span>
                 </div>
               </div>
             </div>
@@ -361,18 +361,18 @@ export default function Equipe() {
             Meu Gestor
           </h3>
           <div className="card bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg flex-shrink-0">
                 {myGestorData.name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 text-lg">{myGestorData.name}</h3>
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 mt-1">
+                <h3 className="font-semibold text-gray-900 text-base truncate">{myGestorData.name}</h3>
+                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 mt-1">
                   Gestor
                 </span>
                 <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                  <Mail size={16} className="text-gray-400" />
-                  <span>{myGestorData.email}</span>
+                  <Mail size={14} className="text-gray-400 flex-shrink-0" />
+                  <span className="truncate">{myGestorData.email}</span>
                 </div>
               </div>
             </div>
