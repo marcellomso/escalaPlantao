@@ -1,56 +1,135 @@
-const Datastore = require('nedb');
-const path = require('path');
+const { MongoClient } = require('mongodb');
 
-// Diretório onde os dados serão armazenados
-const dbPath = path.join(__dirname, '../../data');
+// URL de conexão do MongoDB (Railway ou local)
+const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017';
+const DB_NAME = process.env.MONGODB_DB_NAME || 'escala_plantao';
 
-// Criação das coleções
-const db = {
-  users: new Datastore({ 
-    filename: path.join(dbPath, 'users.db'), 
-    autoload: true 
-  }),
-  plantoes: new Datastore({ 
-    filename: path.join(dbPath, 'plantoes.db'), 
-    autoload: true 
-  })
-};
+// Cliente MongoDB
+let client = null;
+let db = null;
 
-// Criar índices para buscas mais rápidas
-db.users.ensureIndex({ fieldName: 'email', unique: true });
-db.plantoes.ensureIndex({ fieldName: 'date' });
+/**
+ * Conecta ao MongoDB
+ * @returns {Promise<Db>} Instância do banco de dados
+ */
+async function connectDB() {
+  if (db) {
+    return db;
+  }
 
-// Função para transformar callbacks em Promises
-const promisify = (collection, method, ...args) => {
-  return new Promise((resolve, reject) => {
-    collection[method](...args, (err, result) => {
-      if (err) reject(err);
-      else resolve(result);
-    });
-  });
-};
+  try {
+    client = new MongoClient(MONGODB_URL);
+    await client.connect();
+    db = client.db(DB_NAME);
+    
+    console.log('✅ Conectado ao MongoDB');
+    
+    // Criar índices
+    await db.collection('users').createIndex({ email: 1 }, { unique: true });
+    await db.collection('plantoes').createIndex({ date: 1 });
+    
+    return db;
+  } catch (error) {
+    console.error('❌ Erro ao conectar ao MongoDB:', error.message);
+    throw error;
+  }
+}
 
-// Operações CRUD genéricas
+/**
+ * Fecha a conexão com o MongoDB
+ */
+async function closeDB() {
+  if (client) {
+    await client.close();
+    client = null;
+    db = null;
+    console.log('🔌 Conexão MongoDB fechada');
+  }
+}
+
+/**
+ * Retorna a instância do banco de dados
+ * @returns {Db} Instância do banco de dados
+ */
+function getDB() {
+  if (!db) {
+    throw new Error('MongoDB não conectado. Chame connectDB() primeiro.');
+  }
+  return db;
+}
+
+// Operações CRUD genéricas (mantém mesma interface do NeDB)
 const dbOperations = {
-  // Inserir documento
-  insert: (collection, doc) => promisify(db[collection], 'insert', { ...doc, createdAt: new Date() }),
+  /**
+   * Inserir documento
+   * @param {string} collection - Nome da coleção
+   * @param {object} doc - Documento a inserir
+   * @returns {Promise<object>} Documento inserido
+   */
+  insert: async (collection, doc) => {
+    const database = getDB();
+    const docWithTimestamp = { ...doc, createdAt: new Date() };
+    const result = await database.collection(collection).insertOne(docWithTimestamp);
+    return { ...docWithTimestamp, _id: result.insertedId };
+  },
 
-  // Buscar todos
-  findAll: (collection, query = {}) => promisify(db[collection], 'find', query),
+  /**
+   * Buscar todos os documentos
+   * @param {string} collection - Nome da coleção
+   * @param {object} query - Filtro de busca
+   * @returns {Promise<array>} Lista de documentos
+   */
+  findAll: async (collection, query = {}) => {
+    const database = getDB();
+    return database.collection(collection).find(query).toArray();
+  },
 
-  // Buscar um
-  findOne: (collection, query) => promisify(db[collection], 'findOne', query),
+  /**
+   * Buscar um documento
+   * @param {string} collection - Nome da coleção
+   * @param {object} query - Filtro de busca
+   * @returns {Promise<object|null>} Documento encontrado ou null
+   */
+  findOne: async (collection, query) => {
+    const database = getDB();
+    return database.collection(collection).findOne(query);
+  },
 
-  // Atualizar
-  update: (collection, query, update, options = {}) => 
-    promisify(db[collection], 'update', query, { $set: update }, options),
+  /**
+   * Atualizar documento
+   * @param {string} collection - Nome da coleção
+   * @param {object} query - Filtro de busca
+   * @param {object} update - Campos a atualizar
+   * @returns {Promise<object>} Resultado da operação
+   */
+  update: async (collection, query, update) => {
+    const database = getDB();
+    const result = await database.collection(collection).updateOne(query, { $set: update });
+    return result;
+  },
 
-  // Remover
-  remove: (collection, query, options = {}) => 
-    promisify(db[collection], 'remove', query, options),
+  /**
+   * Remover documento
+   * @param {string} collection - Nome da coleção
+   * @param {object} query - Filtro de busca
+   * @returns {Promise<object>} Resultado da operação
+   */
+  remove: async (collection, query) => {
+    const database = getDB();
+    const result = await database.collection(collection).deleteOne(query);
+    return result;
+  },
 
-  // Contar documentos
-  count: (collection, query = {}) => promisify(db[collection], 'count', query),
+  /**
+   * Contar documentos
+   * @param {string} collection - Nome da coleção
+   * @param {object} query - Filtro de busca
+   * @returns {Promise<number>} Quantidade de documentos
+   */
+  count: async (collection, query = {}) => {
+    const database = getDB();
+    return database.collection(collection).countDocuments(query);
+  },
 };
 
-module.exports = { db, dbOperations };
+module.exports = { connectDB, closeDB, getDB, dbOperations };
