@@ -122,6 +122,8 @@ export function DataProvider({ children }) {
     getUsersByRole: (role) => users.filter(u => u.role === role),
     getGestores: () => users.filter(u => u.role === 'gestor'),
     getCorretores: () => users.filter(u => u.role === 'corretor'),
+    getRecepcionistas: () => users.filter(u => u.role === 'recepcionista'),
+    getPendentes: () => users.filter(u => u.role === 'pendente'),
     getCorretoresByGestor: (gestorId) => users.filter(u => u.role === 'corretor' && u.gestorId === gestorId),
     addUser,
     updateUser,

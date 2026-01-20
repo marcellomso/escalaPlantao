@@ -17,6 +17,11 @@ export default function Layout() {
     return <Navigate to="/login" replace />;
   }
 
+  // Usuários pendentes devem aguardar aprovação
+  if (user.role === 'pendente') {
+    return <Navigate to="/aguardando-aprovacao" replace />;
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
