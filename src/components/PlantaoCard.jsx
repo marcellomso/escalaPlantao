@@ -146,15 +146,14 @@ export default function PlantaoCard({
       )}
 
       {/* Seletor de Corretor (usado pelo Gestor) */}
-      {/* Mostra se showCorretorSelector=true E ainda não tem corretor atribuído */}
-      {showCorretorSelector && !plantao.corretorId && (
+      {showCorretorSelector && (
         <div className="mt-4 space-y-2">
           <select
             className="input text-sm"
             value={plantao.corretorId || ''}
             onChange={(e) => onChangeCorretor?.(plantao.id, e.target.value)}
           >
-            <option value="">Atribuir corretor...</option>
+            <option value="">Nenhum corretor atribuído</option>
             {corretoresDisponiveis.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
