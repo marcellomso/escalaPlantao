@@ -26,12 +26,16 @@ export default function Sidebar() {
   const getMenuItems = () => {
     const items = [
       { to: '/', icon: Home, label: 'Início' },
-      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     ];
+
+    // Dashboard para todos exceto recepcionista
+    if (user?.role !== 'recepcionista') {
+      items.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' });
+    }
 
     // Menu específico por role
     if (user?.role === 'diretor') {
-      items.push({ to: '/plantoes', icon: ClipboardList, label: 'Gerenciar Plantões' });
+      items.push({ to: '/plantoes', icon: ClipboardList, label: 'Painel' });
     }
 
     if (user?.role === 'gestor') {
@@ -42,10 +46,17 @@ export default function Sidebar() {
       items.push({ to: '/corretor-plantoes', icon: ClipboardList, label: 'Meus Plantões' });
     }
 
-    items.push(
-      { to: '/agenda', icon: CalendarDays, label: 'Agenda' },
-      { to: '/equipe', icon: Users, label: 'Equipe' }
-    );
+    if (user?.role === 'recepcionista') {
+      items.push({ to: '/plantoes', icon: ClipboardList, label: 'Gerenciar Plantões' });
+    }
+
+    // Agenda para todos
+    items.push({ to: '/agenda', icon: CalendarDays, label: 'Agenda' });
+
+    // Equipe para todos exceto recepcionista e pendente
+    if (user?.role !== 'recepcionista' && user?.role !== 'pendente') {
+      items.push({ to: '/equipe', icon: Users, label: 'Equipe' });
+    }
 
     return items;
   };
@@ -54,11 +65,13 @@ export default function Sidebar() {
 
   const getRoleBadge = () => {
     const badges = {
-      diretor: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Diretor' },
+      diretor: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Diretor' },
       gestor: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Gestor' },
-      corretor: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Corretor' }
+      corretor: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Corretor' },
+      recepcionista: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Recepcionista' },
+      pendente: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Pendente' }
     };
-    return badges[user?.role] || badges.corretor;
+    return badges[user?.role] || badges.pendente;
   };
 
   const badge = getRoleBadge();

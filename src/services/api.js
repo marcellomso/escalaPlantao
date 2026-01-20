@@ -36,13 +36,25 @@ export const usersApi = {
   // Buscar corretores
   getCorretores: () => request('/users/role/corretor'),
 
+  // Buscar recepcionistas
+  getRecepcionistas: () => request('/users/role/recepcionista'),
+
+  // Buscar usuários pendentes
+  getPendentes: () => request('/users/role/pendente'),
+
   // Buscar corretores de um gestor
   getCorretoresByGestor: (gestorId) => request(`/users/gestor/${gestorId}/corretores`),
 
-  // Criar usuário
+  // Criar usuário (administrativo)
   create: (user) => request('/users', {
     method: 'POST',
     body: JSON.stringify(user),
+  }),
+
+  // Auto-cadastro de usuário
+  register: (userData) => request('/users/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
   }),
 
   // Atualizar usuário

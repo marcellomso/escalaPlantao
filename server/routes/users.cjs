@@ -3,6 +3,50 @@ const { dbOperations } = require('../db/index.cjs');
 
 const router = express.Router();
 
+/**
+ * Roles disponíveis no sistema:
+ * - 'diretor': Acesso total, gerencia cargos e vínculos
+ * - 'gestor': Gerencia plantões e distribui aos corretores
+ * - 'corretor': Visualiza e confirma presença nos plantões
+ * - 'recepcionista': Pode criar e excluir plantões (sem atribuir gestores)
+ * - 'pendente': Usuário recém-cadastrado aguardando atribuição de cargo
+ */
+
+// POST /api/users/register - Auto-cadastro de novo usuário
+router.post('/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Validar campos obrigatórios
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+    }
+
+    // Verificar se email já existe
+    const existingUser = await dbOperations.findOne('users', { email });
+    if (existingUser) {
+      return res.status(409).json({ error: 'Este email já está cadastrado' });
+    }
+
+    // Criar usuário com role 'pendente'
+    const newUser = {
+      name,
+      email,
+      password,
+      role: 'pendente',
+      id: Date.now().toString()
+    };
+
+    const user = await dbOperations.insert('users', newUser);
+    
+    // Não retornar a senha
+    const { password: _, ...userWithoutPassword } = user;
+    res.status(201).json(userWithoutPassword);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/users - Listar todos os usuários
 router.get('/', async (req, res) => {
   try {

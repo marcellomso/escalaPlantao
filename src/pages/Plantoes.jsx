@@ -63,8 +63,11 @@ export default function Plantoes() {
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
 
-  // Apenas diretor pode acessar esta página
-  if (user?.role !== 'diretor') {
+  const isDiretor = user?.role === 'diretor';
+  const isRecepcionista = user?.role === 'recepcionista';
+
+  // Diretor e Recepcionista podem acessar esta página
+  if (!isDiretor && !isRecepcionista) {
     return <Navigate to="/" replace />;
   }
 
@@ -145,8 +148,15 @@ export default function Plantoes() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Painel do Diretor</h1>
-          <p className="text-gray-600">Gerencie plantões e atribua aos gestores</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isDiretor ? 'Painel do Diretor' : 'Gerenciar Plantões'}
+          </h1>
+          <p className="text-gray-600">
+            {isDiretor 
+              ? 'Gerencie plantões e atribua aos gestores' 
+              : 'Cadastre e exclua plantões'
+            }
+          </p>
         </div>
         <button
           onClick={() => handleOpenModal()}
@@ -163,10 +173,10 @@ export default function Plantoes() {
           <PlantaoCard
             key={plantao.id}
             plantao={plantao}
-            onEdit={handleOpenModal}
+            onEdit={isDiretor ? handleOpenModal : undefined}
             onDelete={handleDelete}
-            showGestorSelector={true}
-            onChangeGestor={handleChangeGestor}
+            showGestorSelector={isDiretor}
+            onChangeGestor={isDiretor ? handleChangeGestor : undefined}
           />
         ))}
       </div>

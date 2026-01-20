@@ -105,23 +105,27 @@ export default function PlantaoCard({
         )}
       </div>
 
-      {/* Ações de editar/excluir (Diretor) */}
-      {showActions && (
+      {/* Ações de editar/excluir (Diretor e Recepcionista) */}
+      {showActions && (onEdit || onDelete) && (
         <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => onEdit?.(plantao)}
-            className="btn-outline flex items-center gap-2 flex-1 justify-center"
-          >
-            <Pencil size={16} />
-            Editar
-          </button>
-          <button
-            onClick={() => onDelete?.(plantao.id)}
-            className="btn-danger flex items-center gap-2 flex-1 justify-center"
-          >
-            <Trash2 size={16} />
-            Excluir
-          </button>
+          {onEdit && (
+            <button
+              onClick={() => onEdit(plantao)}
+              className="btn-outline flex items-center gap-2 flex-1 justify-center"
+            >
+              <Pencil size={16} />
+              Editar
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(plantao.id)}
+              className="btn-danger flex items-center gap-2 flex-1 justify-center"
+            >
+              <Trash2 size={16} />
+              Excluir
+            </button>
+          )}
         </div>
       )}
 

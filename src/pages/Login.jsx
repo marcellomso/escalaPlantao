@@ -1,43 +1,58 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Shield, Briefcase, Building2, ArrowRight } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ClipboardList, Shield, Briefcase, Building2, Headphones, ArrowRight, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
+import { usersApi } from '../services/api';
 import Modal from '../components/Modal';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showGestorModal, setShowGestorModal] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);
   const [selectedGestor, setSelectedGestor] = useState('');
   
   const { login } = useAuth();
-  const { getUsers, getGestores, updateUser } = useData();
+  const { getGestores, updateUser, refreshData } = useData();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    const users = getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
+    try {
+      // Busca usuário diretamente da API para garantir dados atualizados
+      const user = await usersApi.login(email, password);
 
-    if (!user) {
-      setError('Email ou senha inválidos');
-      return;
+      // Se usuário está pendente, redirecionar para página de aguardo
+      if (user.role === 'pendente') {
+        login(user);
+        navigate('/aguardando-aprovacao');
+        return;
+      }
+
+      // Se for corretor sem gestor, pedir para selecionar
+      if (user.role === 'corretor' && !user.gestorId) {
+        setPendingUser(user);
+        setShowGestorModal(true);
+        // Recarrega dados para ter lista de gestores atualizada
+        await refreshData();
+        return;
+      }
+
+      login(user);
+      // Recarrega dados após login
+      await refreshData();
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Email ou senha inválidos');
+    } finally {
+      setLoading(false);
     }
-
-    // Se for corretor sem gestor, pedir para selecionar
-    if (user.role === 'corretor' && !user.gestorId) {
-      setPendingUser(user);
-      setShowGestorModal(true);
-      return;
-    }
-
-    login(user);
-    navigate('/');
   };
 
   const handleConfirmGestor = () => {
@@ -53,20 +68,26 @@ export default function Login() {
     {
       icon: Shield,
       title: 'Diretor',
-      description: 'Cria plantões e atribui aos gestores responsáveis',
+      description: 'Gerencia cargos e atribui gestores',
       color: 'bg-primary-800'
     },
     {
       icon: Briefcase,
       title: 'Gestor',
-      description: 'Gerencia os plantões e distribui aos corretores',
+      description: 'Distribui plantões aos corretores',
       color: 'bg-amber-600'
     },
     {
       icon: Building2,
       title: 'Corretor',
-      description: 'Visualiza e confirma presença nos plantões',
+      description: 'Confirma presença nos plantões',
       color: 'bg-emerald-600'
+    },
+    {
+      icon: Headphones,
+      title: 'Recepcionista',
+      description: 'Cadastra e gerencia plantões',
+      color: 'bg-blue-600'
     }
   ];
 
@@ -83,16 +104,14 @@ export default function Login() {
         </div>
 
         {/* Roles */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {roles.map((role) => (
-            <div key={role.title} className="flex sm:flex-col items-center sm:items-center gap-3 sm:gap-0 text-left sm:text-center bg-white/5 sm:bg-transparent rounded-lg p-3 sm:p-0">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 ${role.color} rounded-xl flex items-center justify-center flex-shrink-0 sm:mx-auto sm:mb-2`}>
-                <role.icon className="text-white" size={24} />
+            <div key={role.title} className="flex flex-col items-center text-center bg-white/5 rounded-lg p-3">
+              <div className={`w-10 h-10 ${role.color} rounded-xl flex items-center justify-center mb-2`}>
+                <role.icon className="text-white" size={20} />
               </div>
-              <div className="min-w-0">
-                <h3 className="font-medium text-white text-sm">{role.title}</h3>
-                <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">{role.description}</p>
-              </div>
+              <h3 className="font-medium text-white text-xs">{role.title}</h3>
+              <p className="text-[10px] text-gray-500 mt-0.5 leading-tight">{role.description}</p>
             </div>
           ))}
         </div>
@@ -132,17 +151,26 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Entrar no Sistema
-              <ArrowRight size={20} />
+              {loading ? 'Entrando...' : (
+                <>
+                  Entrar no Sistema
+                  <ArrowRight size={20} />
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-4 text-center text-gray-400 text-sm">
-            <p>Contas de teste:</p>
-            <p className="text-xs mt-1">diretor@escala.com / joao@escala.com / matheus@escala.com</p>
-            <p className="text-xs">Senha: 123456</p>
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <Link
+              to="/register"
+              className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <UserPlus size={20} />
+              Criar nova conta
+            </Link>
           </div>
         </div>
       </div>
