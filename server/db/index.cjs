@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 
-// URL de conexão do MongoDB (Railway ou local)
-const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017';
+// URL de conexão do MongoDB (Railway usa MONGO_URL)
+const MONGODB_URL = process.env.MONGO_URL || process.env.MONGODB_URL || 'mongodb://localhost:27017';
 const DB_NAME = process.env.MONGODB_DB_NAME || 'escala_plantao';
 
 // Cliente MongoDB
