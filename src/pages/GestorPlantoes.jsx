@@ -34,15 +34,21 @@ export default function GestorPlantoes() {
   );
   const confirmados = plantoes.filter(p => p.status === 'confirmado');
 
-  // Atribui um corretor ao plantão
+  // Atribui ou remove um corretor do plantão
   const handleChangeCorretor = async (plantaoId, corretorId) => {
-    if (!corretorId) return;
-    
     try {
-      await updatePlantao(plantaoId, { corretorId });
+      const updates = { corretorId };
+      
+      // Se removendo corretor, ajustar status
+      if (!corretorId) {
+        updates.status = 'aguardando_corretor';
+        updates.confirmedByCorretor = false;
+      }
+      
+      await updatePlantao(plantaoId, updates);
     } catch (error) {
-      console.error('Erro ao atribuir corretor:', error);
-      alert('Erro ao atribuir corretor. Tente novamente.');
+      console.error('Erro ao alterar corretor:', error);
+      alert('Erro ao alterar corretor. Tente novamente.');
     }
   };
 
@@ -119,6 +125,8 @@ export default function GestorPlantoes() {
                 key={plantao.id}
                 plantao={plantao}
                 showActions={false}
+                showCorretorSelector={true}
+                onChangeCorretor={handleChangeCorretor}
               />
             ))}
           </div>
@@ -138,6 +146,8 @@ export default function GestorPlantoes() {
                 key={plantao.id}
                 plantao={plantao}
                 showActions={false}
+                showCorretorSelector={true}
+                onChangeCorretor={handleChangeCorretor}
               />
             ))}
           </div>
