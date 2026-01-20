@@ -4,6 +4,7 @@ const path = require('path');
 const usersRoutes = require('./routes/users.cjs');
 const plantoesRoutes = require('./routes/plantoes.cjs');
 const seed = require('./db/seed.cjs');
+const { connectDB } = require('./db/index.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,11 +37,24 @@ if (isProduction) {
   });
 }
 
+// Função para iniciar o servidor
+async function startServer() {
+  try {
+    // Conectar ao MongoDB antes de iniciar o servidor
+    await connectDB();
+    
+    app.listen(PORT, async () => {
+      console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+      console.log(`📦 Modo: ${isProduction ? 'Produção' : 'Desenvolvimento'}`);
+      
+      // Executar seed na inicialização
+      await seed();
+    });
+  } catch (error) {
+    console.error('❌ Falha ao iniciar servidor:', error.message);
+    process.exit(1);
+  }
+}
+
 // Iniciar servidor
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log(`📦 Modo: ${isProduction ? 'Produção' : 'Desenvolvimento'}`);
-  
-  // Executar seed na inicialização
-  await seed();
-});
+startServer();

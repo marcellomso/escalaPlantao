@@ -1,4 +1,4 @@
-const { dbOperations } = require('./index.cjs');
+const { dbOperations, connectDB } = require('./index.cjs');
 
 // Dados iniciais migrados do DataContext.jsx
 const initialUsers = [
@@ -51,7 +51,14 @@ async function seed() {
 
 // Executar se chamado diretamente
 if (require.main === module) {
-  seed();
+  // Quando executado diretamente, conecta ao banco primeiro
+  connectDB()
+    .then(() => seed())
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error('Erro:', error);
+      process.exit(1);
+    });
 }
 
 module.exports = seed;
