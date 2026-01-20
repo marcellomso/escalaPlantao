@@ -1,8 +1,16 @@
 const { MongoClient } = require('mongodb');
 
 // URL de conexão do MongoDB (Railway usa MONGO_URL)
-const MONGODB_URL = process.env.MONGO_URL || process.env.MONGODB_URL || 'mongodb://localhost:27017';
+let MONGODB_URL = process.env.MONGO_URL || process.env.MONGODB_URL || 'mongodb://localhost:27017';
+
+// Garantir que a URL está limpa (sem espaços ou quebras de linha)
+MONGODB_URL = MONGODB_URL.trim();
+
 const DB_NAME = process.env.MONGODB_DB_NAME || 'escala_plantao';
+
+// Log para debug (oculta a senha)
+const sanitizedUrl = MONGODB_URL.replace(/:([^:@]+)@/, ':****@');
+console.log(`🔗 Conectando ao MongoDB: ${sanitizedUrl}`);
 
 // Cliente MongoDB
 let client = null;
@@ -31,6 +39,7 @@ async function connectDB() {
     return db;
   } catch (error) {
     console.error('❌ Erro ao conectar ao MongoDB:', error.message);
+    console.error('URL usada (sanitizada):', sanitizedUrl);
     throw error;
   }
 }
