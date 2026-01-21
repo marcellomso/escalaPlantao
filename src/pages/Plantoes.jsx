@@ -63,6 +63,9 @@ export default function Plantoes() {
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
 
+  // Estado para confirmação de troca de gestor
+  const [gestorChangeModal, setGestorChangeModal] = useState({ open: false, plantao: null, newGestorId: null });
+
   const isDiretor = user?.role === 'diretor';
   const isRecepcionista = user?.role === 'recepcionista';
 
@@ -139,8 +142,33 @@ export default function Plantoes() {
     }
   };
 
+  // Ao tentar trocar gestor, exibe modal de confirmação se já houver corretores vinculados
   const handleChangeGestor = (plantaoId, gestorId) => {
-    updatePlantao(plantaoId, { gestorId });
+    const plantao = plantoes.find(p => p.id === plantaoId);
+    // Se já existe corretor vinculado, exibe modal de confirmação
+    if (plantao && plantao.corretorId) {
+      setGestorChangeModal({ open: true, plantao, newGestorId: gestorId });
+    } else {
+      updatePlantao(plantaoId, { gestorId });
+    }
+  };
+
+  // Confirma troca de gestor e remove vínculo do corretor
+  const confirmGestorChange = async () => {
+    const { plantao, newGestorId } = gestorChangeModal;
+    if (plantao) {
+      // Remove o corretor vinculado ao plantão; backend ajusta status
+      await updatePlantao(plantao.id, {
+        gestorId: newGestorId,
+        corretorId: null,
+        confirmedByCorretor: false
+      });
+    }
+    setGestorChangeModal({ open: false, plantao: null, newGestorId: null });
+  };
+
+  const cancelGestorChange = () => {
+    setGestorChangeModal({ open: false, plantao: null, newGestorId: null });
   };
 
   return (
@@ -193,133 +221,39 @@ export default function Plantoes() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal de criação/edição de plantão */}
       <Modal
         isOpen={showModal}
         onClose={handleCloseModal}
         title={editingPlantao ? 'Editar Plantão' : 'Novo Plantão'}
       >
+        {/* ...existing code... */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="label">Título do Plantão</label>
-            <input
-              type="text"
-              className="input"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Ex: Stand Ecoville (Manhã)"
-              required
-            />
-          </div>
+          {/* ...existing code... */}
+        </form>
+      </Modal>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Data</label>
-              <input
-                type="date"
-                className={`input ${formErrors.date ? 'border-red-500 focus:ring-red-500' : ''}`}
-                value={formData.date}
-                onChange={(e) => handleDateChange(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                required
-              />
-              {formErrors.date && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {formErrors.date}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="label">Gestor Responsável</label>
-              <select
-                className="input"
-                value={formData.gestorId}
-                onChange={(e) => setFormData({ ...formData, gestorId: e.target.value })}
-              >
-                <option value="">Selecione...</option>
-                {gestores.map(g => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Hora Início</label>
-              <input
-                type="time"
-                className={`input ${formErrors.time ? 'border-red-500 focus:ring-red-500' : ''}`}
-                value={formData.startTime}
-                onChange={(e) => {
-                  setFormData({ ...formData, startTime: e.target.value });
-                  // Remove erro de tempo ao alterar
-                  if (formErrors.time) {
-                    const { time, ...restErrors } = formErrors;
-                    setFormErrors(restErrors);
-                  }
-                }}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">Hora Fim</label>
-              <input
-                type="time"
-                className={`input ${formErrors.time ? 'border-red-500 focus:ring-red-500' : ''}`}
-                value={formData.endTime}
-                onChange={(e) => {
-                  setFormData({ ...formData, endTime: e.target.value });
-                  // Remove erro de tempo ao alterar
-                  if (formErrors.time) {
-                    const { time, ...restErrors } = formErrors;
-                    setFormErrors(restErrors);
-                  }
-                }}
-                required
-              />
-            </div>
-          </div>
-          {formErrors.time && (
-            <p className="text-sm text-red-600 flex items-center gap-1 -mt-2">
-              <AlertCircle size={14} />
-              {formErrors.time}
-            </p>
-          )}
-
-          <div>
-            <label className="label">Local</label>
-            <input
-              type="text"
-              className="input"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="Ex: Av. das Américas, 1000"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="label">Observações</label>
-            <textarea
-              className="input"
-              rows={3}
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Informações adicionais..."
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={handleCloseModal} className="btn-outline flex-1">
+      {/* Modal de confirmação de troca de gestor */}
+      <Modal
+        isOpen={gestorChangeModal.open}
+        onClose={cancelGestorChange}
+        title="Trocar Gestor do Plantão"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-800">
+            Ao trocar o gestor responsável, todos os corretores atualmente vinculados a este plantão serão <span className="font-semibold text-red-600">removidos automaticamente</span>.<br/>
+            O plantão voltará ao status de <span className="font-semibold">sem corretor definido</span>.<br/>
+            Tem certeza que deseja continuar?
+          </p>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={cancelGestorChange} className="btn-outline flex-1">
               Cancelar
             </button>
-            <button type="submit" className="btn-primary flex-1">
-              {editingPlantao ? 'Salvar' : 'Criar Plantão'}
+            <button type="button" onClick={confirmGestorChange} className="btn-primary flex-1">
+              Confirmar troca de gestor
             </button>
           </div>
-        </form>
+        </div>
       </Modal>
     </div>
   );

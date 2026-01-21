@@ -147,6 +147,12 @@ router.put('/:id', async (req, res) => {
       updates.status = 'confirmado';
     }
 
+    // Se corretor foi removido, volta para aguardando_corretor
+    if (Object.prototype.hasOwnProperty.call(updates, 'corretorId') && (updates.corretorId === null || updates.corretorId === undefined)) {
+      updates.status = 'aguardando_corretor';
+      updates.confirmedByCorretor = false;
+    }
+
     await dbOperations.update('plantoes', { id: req.params.id }, updates);
     const plantao = await dbOperations.findOne('plantoes', { id: req.params.id });
     res.json(plantao);
