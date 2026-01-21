@@ -51,7 +51,9 @@ router.post('/register', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const users = await dbOperations.findAll('users');
-    res.json(users);
+    // Remove o campo password de todos os usuários antes de enviar
+    const safeUsers = users.map(({ password, ...rest }) => rest);
+    res.json(safeUsers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -64,7 +66,8 @@ router.get('/:id', async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
-    res.json(user);
+    const { password, ...safeUser } = user;
+    res.json(safeUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -74,7 +77,8 @@ router.get('/:id', async (req, res) => {
 router.get('/role/:role', async (req, res) => {
   try {
     const users = await dbOperations.findAll('users', { role: req.params.role });
-    res.json(users);
+    const safeUsers = users.map(({ password, ...rest }) => rest);
+    res.json(safeUsers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -87,7 +91,8 @@ router.get('/gestor/:gestorId/corretores', async (req, res) => {
       role: 'corretor', 
       gestorId: req.params.gestorId 
     });
-    res.json(users);
+    const safeUsers = users.map(({ password, ...rest }) => rest);
+    res.json(safeUsers);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -101,7 +106,8 @@ router.post('/', async (req, res) => {
       id: Date.now().toString()
     };
     const user = await dbOperations.insert('users', newUser);
-    res.status(201).json(user);
+    const { password, ...safeUser } = user;
+    res.status(201).json(safeUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -112,7 +118,8 @@ router.put('/:id', async (req, res) => {
   try {
     await dbOperations.update('users', { id: req.params.id }, req.body);
     const user = await dbOperations.findOne('users', { id: req.params.id });
-    res.json(user);
+    const { password, ...safeUser } = user;
+    res.json(safeUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -136,7 +143,8 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Email ou senha inválidos' });
     }
-    res.json(user);
+    const { password: pwd, ...safeUser } = user;
+    res.json(safeUser);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

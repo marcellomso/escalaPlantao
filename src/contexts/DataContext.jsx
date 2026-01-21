@@ -3,14 +3,23 @@ import { usersApi, plantoesApi } from '../services/api';
 
 const DataContext = createContext(null);
 
+import { useAuth } from './AuthContext';
+
 export function DataProvider({ children }) {
   const [users, setUsers] = useState([]);
   const [plantoes, setPlantoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais apenas se estiver autenticado
   useEffect(() => {
+    if (!user) {
+      setUsers([]);
+      setPlantoes([]);
+      setLoading(false);
+      return;
+    }
     async function loadData() {
       try {
         setLoading(true);
@@ -29,7 +38,7 @@ export function DataProvider({ children }) {
       }
     }
     loadData();
-  }, []);
+  }, [user]);
 
   // Funções de Usuários
   const addUser = useCallback(async (user) => {
