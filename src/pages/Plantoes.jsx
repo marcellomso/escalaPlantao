@@ -227,9 +227,126 @@ export default function Plantoes() {
         onClose={handleCloseModal}
         title={editingPlantao ? 'Editar Plantão' : 'Novo Plantão'}
       >
-        {/* ...existing code... */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ...existing code... */}
+          <div>
+            <label className="label">Título do Plantão</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="Ex: Stand Ecoville (Manhã)"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Data</label>
+              <input
+                type="date"
+                className={`input ${formErrors.date ? 'border-red-500 focus:ring-red-500' : ''}`}
+                value={formData.date}
+                onChange={(e) => handleDateChange(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                required
+              />
+              {formErrors.date && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {formErrors.date}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="label">Gestor Responsável</label>
+              <select
+                className="input"
+                value={formData.gestorId}
+                onChange={(e) => setFormData({ ...formData, gestorId: e.target.value })}
+              >
+                <option value="">Selecione...</option>
+                {gestores.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Hora Início</label>
+              <input
+                type="time"
+                className={`input ${formErrors.time ? 'border-red-500 focus:ring-red-500' : ''}`}
+                value={formData.startTime}
+                onChange={(e) => {
+                  setFormData({ ...formData, startTime: e.target.value });
+                  // Remove erro de tempo ao alterar
+                  if (formErrors.time) {
+                    const { time, ...restErrors } = formErrors;
+                    setFormErrors(restErrors);
+                  }
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label className="label">Hora Fim</label>
+              <input
+                type="time"
+                className={`input ${formErrors.time ? 'border-red-500 focus:ring-red-500' : ''}`}
+                value={formData.endTime}
+                onChange={(e) => {
+                  setFormData({ ...formData, endTime: e.target.value });
+                  // Remove erro de tempo ao alterar
+                  if (formErrors.time) {
+                    const { time, ...restErrors } = formErrors;
+                    setFormErrors(restErrors);
+                  }
+                }}
+                required
+              />
+            </div>
+          </div>
+          {formErrors.time && (
+            <p className="text-sm text-red-600 flex items-center gap-1 -mt-2">
+              <AlertCircle size={14} />
+              {formErrors.time}
+            </p>
+          )}
+
+          <div>
+            <label className="label">Local</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Ex: Av. das Américas, 1000"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="label">Observações</label>
+            <textarea
+              className="input"
+              rows={3}
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Informações adicionais..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" className="btn-outline" onClick={handleCloseModal}>
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary">
+              {editingPlantao ? 'Salvar Alterações' : 'Criar Plantão'}
+            </button>
+          </div>
         </form>
       </Modal>
 

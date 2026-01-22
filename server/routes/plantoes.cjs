@@ -127,8 +127,9 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Plantão não encontrado' });
     }
 
-    // Monta o objeto de atualização
-    const updates = { ...req.body };
+  // Monta o objeto de atualização, removendo _id se existir
+  const updates = { ...req.body };
+  if (updates._id) delete updates._id;
 
     // Lógica de transição de status automática
     // Se está atribuindo gestor pela primeira vez

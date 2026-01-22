@@ -87,8 +87,10 @@ export function DataProvider({ children }) {
 
   const updatePlantao = useCallback(async (id, updates) => {
     try {
-      const updatedPlantao = await plantoesApi.update(id, updates);
-      setPlantoes(prev => prev.map(p => p.id === id ? updatedPlantao : p));
+      // Remove _id do objeto de updates, se existir
+      const { _id, ...safeUpdates } = updates || {};
+      const updatedPlantao = await plantoesApi.update(id, safeUpdates);
+      setPlantoes(prev => prev.map(p => String(p.id) === String(id) ? { ...p, ...updatedPlantao } : p));
       return updatedPlantao;
     } catch (err) {
       console.error('Erro ao atualizar plantão:', err);
