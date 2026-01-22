@@ -62,6 +62,8 @@ export default function Plantoes() {
   const [editingPlantao, setEditingPlantao] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
+  // Estado para confirmação de troca de gestor no formulário
+  const [formGestorChangeModal, setFormGestorChangeModal] = useState({ open: false, newGestorId: null });
 
   // Estado para confirmação de troca de gestor
   const [gestorChangeModal, setGestorChangeModal] = useState({ open: false, plantao: null, newGestorId: null });
@@ -93,6 +95,7 @@ export default function Plantoes() {
     setEditingPlantao(null);
     setFormData(initialFormData);
     setFormErrors({});
+    setFormGestorChangeModal({ open: false, newGestorId: null });
   };
 
   // Valida a data ao alterar o campo
@@ -112,7 +115,6 @@ export default function Plantoes() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
     // Valida a data antes de enviar
     const dateValidation = validateDate(formData.date);
     if (!dateValidation.isValid) {
@@ -125,15 +127,43 @@ export default function Plantoes() {
       setFormErrors({ ...formErrors, time: 'Hora de fim deve ser maior que hora de início' });
       return;
     }
-    
+
+    // Se está editando e houve troca de gestor, e já existe corretor vinculado, precisa confirmar remoção do corretor
+    // Detecta troca de gestor, inclusive remoção (gestorId vazio/null)
+    const gestorMudou = editingPlantao &&
+      editingPlantao.gestorId !== formData.gestorId &&
+      editingPlantao.gestorId &&
+      editingPlantao.corretorId;
+    if (gestorMudou) {
+      setFormGestorChangeModal({ open: true, newGestorId: formData.gestorId });
+      return;
+    }
+
+    // Se o modal de confirmação já foi exibido, ou não precisa, segue normalmente
     if (editingPlantao) {
       updatePlantao(editingPlantao.id, formData);
     } else {
       // Backend define o status automaticamente
       addPlantao(formData);
     }
-    
     handleCloseModal();
+  };
+
+  // Confirma troca de gestor no formulário e remove corretor
+  const confirmFormGestorChange = async () => {
+    if (editingPlantao) {
+      await updatePlantao(editingPlantao.id, {
+        ...formData,
+        gestorId: formGestorChangeModal.newGestorId,
+        corretorId: null,
+        confirmedByCorretor: false
+      });
+    }
+    handleCloseModal();
+  };
+
+  const cancelFormGestorChange = () => {
+    setFormGestorChangeModal({ open: false, newGestorId: null });
   };
 
   const handleDelete = (id) => {
@@ -263,13 +293,37 @@ export default function Plantoes() {
               <select
                 className="input"
                 value={formData.gestorId}
-                onChange={(e) => setFormData({ ...formData, gestorId: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, gestorId: e.target.value });
+                }}
               >
                 <option value="">Selecione...</option>
                 {gestores.map(g => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
               </select>
+      {/* Modal de confirmação de troca de gestor no formulário */}
+      <Modal
+        isOpen={formGestorChangeModal.open}
+        onClose={cancelFormGestorChange}
+        title="Trocar Gestor do Plantão"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-800">
+            Ao trocar o gestor responsável, todos os corretores atualmente vinculados a este plantão serão <span className="font-semibold text-red-600">removidos automaticamente</span>.<br/>
+            O plantão voltará ao status de <span className="font-semibold">sem corretor definido</span>.<br/>
+            Tem certeza que deseja continuar?
+          </p>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={cancelFormGestorChange} className="btn-outline flex-1">
+              Cancelar
+            </button>
+            <button type="button" onClick={confirmFormGestorChange} className="btn-primary flex-1">
+              Confirmar troca de gestor
+            </button>
+          </div>
+        </div>
+      </Modal>
             </div>
           </div>
 
