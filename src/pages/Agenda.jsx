@@ -7,7 +7,7 @@ import { useData } from '../contexts/DataContext';
 
 export default function Agenda() {
   const { user } = useAuth();
-  const { getPlantoes, getPlantoesByGestor, getPlantoesByCorretor } = useData();
+  const { getPlantoes, getPlantoesByGestor, getPlantoesByCorretor, getUserById } = useData();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -206,7 +206,6 @@ export default function Agenda() {
                   dayPlantoes.map((plantao) => {
                     const style = getPlantaoStyle(plantao);
                     const isConfirmado = plantao.confirmedByCorretor || plantao.status === 'confirmado';
-                    
                     return (
                       <div 
                         key={plantao.id}
@@ -232,6 +231,11 @@ export default function Agenda() {
                             </div>
                           )}
                         </div>
+                        {plantao.corretorId && getUserById && getUserById(plantao.corretorId)?.name && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            <span className="font-medium">Corretor:</span> {getUserById(plantao.corretorId)?.name}
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -279,7 +283,6 @@ export default function Agenda() {
                   dayPlantoes.map((plantao) => {
                     const style = getPlantaoStyle(plantao);
                     const isConfirmado = plantao.confirmedByCorretor || plantao.status === 'confirmado';
-                    
                     return (
                       <div 
                         key={plantao.id}
@@ -301,6 +304,11 @@ export default function Agenda() {
                           <div className={`flex items-center gap-1 text-xs mt-1 ${style.textLight}`}>
                             <MapPin size={10} />
                             <span className="truncate">{plantao.location}</span>
+                          </div>
+                        )}
+                        {plantao.corretorId && getUserById && getUserById(plantao.corretorId)?.name && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            <span className="font-medium">Corretor:</span> {getUserById(plantao.corretorId)?.name}
                           </div>
                         )}
                       </div>
