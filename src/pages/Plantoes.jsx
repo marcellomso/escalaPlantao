@@ -1,11 +1,55 @@
 import { useState } from 'react';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, List, CalendarDays } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import PlantaoCard from '../components/PlantaoCard';
 import Modal from '../components/Modal';
 import { Navigate } from 'react-router-dom';
-import { parseISO, isValid, isBefore, startOfDay } from 'date-fns';
+import { parseISO, isValid, isBefore, startOfDay, startOfWeek, endOfWeek, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+// Função auxiliar para agrupar plantões por semana e por dia
+const groupByWeekAndDay = (plantoes) => {
+  const grouped = {};
+  
+  plantoes.forEach(plantao => {
+    const date = parseISO(plantao.date);
+    const weekStart = startOfWeek(date, { weekStartsOn: 1 }); // Semana começa na segunda-feira
+    const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+    
+    const weekKey = `${format(weekStart, 'yyyy-MM-dd')} - ${format(weekEnd, 'yyyy-MM-dd')}`;
+    const weekLabel = `${format(weekStart, 'd MMM', { locale: ptBR })} - ${format(weekEnd, 'd MMM yyyy', { locale: ptBR })}`;
+    
+    const dayKey = format(date, 'yyyy-MM-dd');
+    const dayLabel = format(date, 'EEEE', { locale: ptBR }); // Nome completo do dia
+    
+    if (!grouped[weekKey]) {
+      grouped[weekKey] = { 
+        label: weekLabel, 
+        days: {} 
+      };
+    }
+    
+    if (!grouped[weekKey].days[dayKey]) {
+      grouped[weekKey].days[dayKey] = {
+        label: dayLabel,
+        date: date,
+        plantoes: []
+      };
+    }
+    
+    grouped[weekKey].days[dayKey].plantoes.push(plantao);
+  });
+  
+  // Ordenar semanas por data e dias dentro da semana
+  return Object.entries(grouped)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([weekKey, weekData]) => ({
+      week: weekKey,
+      label: weekData.label,
+      days: Object.values(weekData.days).sort((a, b) => a.date - b.date)
+    }));
+};
 
 const initialFormData = {
   title: '',
@@ -62,6 +106,7 @@ export default function Plantoes() {
   const [editingPlantao, setEditingPlantao] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
   const [formErrors, setFormErrors] = useState({});
+  const [viewMode, setViewMode] = useState('all'); // 'all' ou 'week'
   // Estado para confirmação de troca de gestor no formulário
   const [formGestorChangeModal, setFormGestorChangeModal] = useState({ open: false, newGestorId: null });
 
@@ -78,6 +123,9 @@ export default function Plantoes() {
 
   const plantoes = getPlantoes();
   const gestores = getGestores();
+
+  // Agrupar por semana se estiver na visão semanal
+  const plantoesByWeek = viewMode === 'week' ? groupByWeekAndDay(plantoes) : [];
 
   const handleOpenModal = (plantao = null) => {
     if (plantao) {
@@ -225,29 +273,106 @@ export default function Plantoes() {
         </button>
       </div>
 
-      {/* Plantões Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {plantoes.map((plantao) => (
-          <PlantaoCard
-            key={plantao.id}
-            plantao={plantao}
-            onEdit={isDiretor ? handleOpenModal : undefined}
-            onDelete={handleDelete}
-            showGestorSelector={isDiretor}
-            onChangeGestor={isDiretor ? handleChangeGestor : undefined}
-          />
-        ))}
+      {/* Controles de Visualização */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setViewMode('all')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            viewMode === 'all'
+              ? 'bg-primary-600 text-white'
+              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <List size={18} />
+          Todos os Plantões
+        </button>
+        <button
+          onClick={() => setViewMode('week')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            viewMode === 'week'
+              ? 'bg-primary-600 text-white'
+              : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <CalendarDays size={18} />
+          Por Semana
+        </button>
       </div>
 
-      {plantoes.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Nenhum plantão cadastrado</p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="btn-primary mt-4"
-          >
-            Criar primeiro plantão
-          </button>
+      {/* Plantões */}
+      {viewMode === 'all' ? (
+        // Visualização normal em grid
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {plantoes.map((plantao) => (
+              <PlantaoCard
+                key={plantao.id}
+                plantao={plantao}
+                onEdit={isDiretor ? handleOpenModal : undefined}
+                onDelete={handleDelete}
+                showGestorSelector={isDiretor}
+                onChangeGestor={isDiretor ? handleChangeGestor : undefined}
+              />
+            ))}
+          </div>
+
+          {plantoes.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Nenhum plantão cadastrado</p>
+              <button
+                onClick={() => handleOpenModal()}
+                className="btn-primary mt-4"
+              >
+                Criar primeiro plantão
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        // Visualização por semana
+        <div className="space-y-8">
+          {plantoesByWeek.map((week) => (
+            <div key={week.week} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{week.label}</h3>
+              <div className="space-y-6">
+                {week.days.map((day) => (
+                  <div key={day.date} className="border-l-4 border-primary-500 pl-4">
+                    <h4 className="text-md font-medium text-gray-800 mb-3 capitalize">{day.label}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {day.plantoes.map((plantao) => (
+                        <PlantaoCard
+                          key={plantao.id}
+                          plantao={plantao}
+                          onEdit={isDiretor ? handleOpenModal : undefined}
+                          onDelete={handleDelete}
+                          showGestorSelector={isDiretor}
+                          onChangeGestor={isDiretor ? handleChangeGestor : undefined}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {plantoesByWeek.length === 0 && plantoes.length > 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Nenhum plantão encontrado para exibir</p>
+            </div>
+          )}
+
+          {plantoes.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Nenhum plantão cadastrado</p>
+              <button
+                onClick={() => handleOpenModal()}
+                className="btn-primary mt-4"
+              >
+                Criar primeiro plantão
+              </button>
+            </div>
+          )}
         </div>
       )}
 
